@@ -212,8 +212,20 @@ void nextPage(int newi) {
 		printNext(i, newi);
 	}
 
-	//selectedRest = 0;
 
+	mode = 1;
+}
+
+void prevPage(int newi) {
+	tft.setCursor(0, 0);
+	tft.fillScreen(ILI9341_BLACK);
+
+	selectedRest = 29;
+
+	// Print the list of restaurants.
+	for (int i = 0; i < 30; ++i) {
+		printNext(i, newi);
+	}
 
 
 	mode = 1;
@@ -325,34 +337,28 @@ void scrollingMenu() {
 	if (v > JOY_CENTRE + JOY_DEADZONE) {
 		++selectedRest;
 		++CselectedRest;
-		Serial.print("CselectedRest: ");Serial.println(CselectedRest);
 		newi = (CselectedRest/30)*30;
+		selectedRest = constrain(selectedRest, 0, 1065);
 		if (CselectedRest % 30 == 0 && CselectedRest != 0){
 			nextPage(newi);
-			//selectedRest = 0;
 		}
-		// else{
-		// 	newi = 0;
-		// }
 
 	}
-	// else if (v < JOY_CENTRE - JOY_DEADZONE) {
-	// 	--selectedRest;
-	// 	--CselectedRest;
-	// 	Serial.print("CselectedRest: ");Serial.println(CselectedRest);
-	// 	newi = (CselectedRest/30)*30;
-	// 	if (CselectedRest % 29 == 0 && CselectedRest != 0){
-	// 		prevPage(newi);
-	// 		//selectedRest = 0;
-	// 	}
-	// }
+	else if (v < JOY_CENTRE - JOY_DEADZONE) {
+		--selectedRest;
+		--CselectedRest;
+		newi = (CselectedRest/30)*30;
+		selectedRest = constrain(selectedRest, 0, 1065);
+		if (CselectedRest % 29 == 0 && CselectedRest != 0){
+			prevPage(newi);
+		}
+	}
+	CselectedRest = constrain(CselectedRest, 0, 1065);
 
-	// int CselectedRest = constrain(selectedRest, 0, REST_DISP_NUM -1);
 
 	// If we picked a new restaurant, update the way it and the previously
 	// selected restaurant are displayed.
 	if (oldRest != selectedRest) {
-		Serial.print("Newi: ");Serial.println(newi);
 		printNext(oldRest, newi);
 		printNext(selectedRest, newi);
 		delay(50); // so we don't scroll too fast
