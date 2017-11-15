@@ -148,6 +148,7 @@ void beginMode0() {
 void printNext(int i, int newi) {
 	restaurant r;
 
+
 	// get the i'th restaurant
 	getRestaurant(&r, restaurants[i + newi].index, &card, &cache);
 
@@ -158,6 +159,7 @@ void printNext(int i, int newi) {
 	else {
 		tft.setTextColor(ILI9341_BLACK, ILI9341_WHITE);
 	}
+
 	tft.setCursor(0, i*8);
 	tft.print(r.name);
 	//Serial.println(r.name);
