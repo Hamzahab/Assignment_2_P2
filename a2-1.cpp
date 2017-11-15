@@ -145,24 +145,6 @@ void beginMode0() {
 
 // Print the i'th restaurant in the sorted list.
 // Assumes 0 <= i < 30 for part 1.
-void printRestaurant(int i) {
-	restaurant r;
-
-	// get the i'th restaurant
-	getRestaurant(&r, restaurants[i].index, &card, &cache);
-
-	// Set its colour based on whether or not it is the selected restaurant.
-	if (i != selectedRest) {
-		tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-	}
-	else {
-		tft.setTextColor(ILI9341_BLACK, ILI9341_WHITE);
-	}
-	tft.setCursor(0, i*8);
-	tft.print(r.name);
-	//Serial.println(r.name);
-}
-
 void printNext(int i, int newi) {
 	restaurant r;
 
