@@ -39,13 +39,21 @@
 // number of restaurants to display
 #define REST_DISP_NUM 30
 
+
+
 // Use hardware SPI (on Mega2560, #52, #51, and #50) and the above for CS/DC
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
-
-
 // the currently selected restaurant, if we are in mode 1
 int selectedRest;
 int CselectedRest;
+
+// CHANGE THE RATINGS PREFERENCE
+
+int SELECTOR = 5;
+
+
+int maxRest(int SELECTOR);
+int maxRestaurant = maxRest(SELECTOR);
 
 // which mode are we in?
 int mode;
@@ -127,7 +135,7 @@ void moveCursor() {
 
 // Set the mode to 0 and draw the map and cursor according to curView
 void beginMode0() {
-	// Black out the rating selector part (less relevant in Assignment 1, but
+	// Black out the rating SELECTOR part (less relevant in Assignment 1, but
 	// it is useful when you first start the program).
 	tft.fillRect(DISP_WIDTH, 0, RATING_SIZE, DISP_HEIGHT, ILI9341_BLACK);
 
@@ -147,7 +155,7 @@ void beginMode0() {
 // Assumes 0 <= i < 30 for part 1.
 void printNext(int i, int newi) {
 	restaurant r;
-
+	//int j;
 
 	// get the i'th restaurant
 	getRestaurant(&r, restaurants[i + newi].index, &card, &cache);
@@ -159,10 +167,19 @@ void printNext(int i, int newi) {
 	else {
 		tft.setTextColor(ILI9341_BLACK, ILI9341_WHITE);
 	}
+	if (restaurants[newi + i].dist < 24910){
+		tft.setCursor(0, i*8);
+		tft.print(r.name);
 
-	tft.setCursor(0, i*8);
-	tft.print(r.name);
+	}
+
+	int x = r.rating;
+	int rating = max(floor(x+1)/2, 1);
+	// Serial.print(r.name);Serial.println(rating);
+	//Serial.print(restaurants[newi + i].dist);Serial.print(" ");Serial.println(rating);
 	//Serial.println(r.name);
+	//Serial.print("J -----");Serial.println(j);
+
 }
 
 // Begin mode 1 by sorting the restaurants around the cursor
@@ -181,6 +198,8 @@ void beginMode1() {
 	for (int i = 0; i < REST_DISP_NUM; ++i) {
 		printNext(i, 0);
 	}
+	Serial.println(maxRestaurant);
+
 
 	mode = 1;
 }
@@ -308,6 +327,24 @@ void scrollingMap() {
   }
 }
 
+int maxRest(int SELECTOR){
+	if (SELECTOR == 5){
+		return 154;
+	}
+	else if (SELECTOR == 4){
+		return 650;
+	}
+	else if (SELECTOR == 3){
+		return 939;
+	}
+	else if (SELECTOR == 2){
+		return 1024;
+	}
+	else{
+		return 1066;
+	}
+}
+
 // Process joystick movement when in mode 1.
 void scrollingMenu() {
 
@@ -315,17 +352,24 @@ void scrollingMenu() {
 	int oldRest = selectedRest;
 
 
+
 	int v = analogRead(JOY_VERT_ANALOG);
+
 
 	// if the joystick was pushed up or down, change restaurants accordingly.
 	if (v > JOY_CENTRE + JOY_DEADZONE) {
 		++selectedRest;
 		++CselectedRest;
 		newi = (CselectedRest/30)*30;
-		selectedRest = constrain(selectedRest, 0, 1065);
+		//selectedRest = constrain(selectedRest, 0, 10);
+		if ((maxRestaurant - newi)<30){
+			selectedRest = constrain(selectedRest, 0, (maxRestaurant - newi - 1));
+		}
 		if (CselectedRest % 30 == 0 && CselectedRest != 0){
 			nextPage(newi);
+
 		}
+
 
 	}
 	else if (v < JOY_CENTRE - JOY_DEADZONE) {
@@ -337,7 +381,11 @@ void scrollingMenu() {
 			prevPage(newi);
 		}
 	}
-	CselectedRest = constrain(CselectedRest, 0, 1065);
+	CselectedRest = constrain(CselectedRest, 0, maxRestaurant - 1);
+	//Serial.print("CselectedRest: ");Serial.println(CselectedRest);
+	//Serial.print("SelectedRest: ");Serial.println(selectedRest);
+
+
 
 
 	// If we picked a new restaurant, update the way it and the previously
@@ -380,9 +428,14 @@ int main() {
 	while (true) {
 		if (mode == 0) {
 			scrollingMap();
+
 		}
 		else {
 			scrollingMenu();
+			//Serial.print(maxRestaurant);
+
+
+			//maxRest();
 		}
 	}
 
