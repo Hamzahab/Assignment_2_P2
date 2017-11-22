@@ -15,6 +15,9 @@
 
 #define REST_START_BLOCK 4000000
 #define NUM_RESTAURANTS  1066
+// #define SELECTOR 5
+extern int RATING;
+
 
 
 // The same restaurant struct we discussed in class.

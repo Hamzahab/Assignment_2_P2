@@ -6,6 +6,7 @@
 #include "yegmap.h"
 #include "restaurant.h"
 #include "quicksort.h"
+#include <TouchScreen.h>
 // TFT display and SD card will share the hardware SPI interface.
 // For the Adafruit shield, these are the default.
 // The display uses hardware SPI, plus #9 & #10
@@ -39,6 +40,33 @@
 // number of restaurants to display
 #define REST_DISP_NUM 30
 
+// calibration data for the touch screen, obtained from documentation
+// the minimum/maximum possible readings from the touch point
+#define TS_MINX 150
+#define TS_MINY 120
+#define TS_MAXX 920
+#define TS_MAXY 940
+
+// thresholds to determine if there was a touch
+#define MINPRESSURE   10
+#define MAXPRESSURE 1000
+
+#define BLACK 0x0000
+#define BLUE 0x001F
+#define RED 0xF800
+#define GREEN 0x07E0
+#define CYAN 0x07FF
+#define MAGENTA 0xF81F
+#define YELLOW 0xFFE0
+#define WHITE 0xFFFF
+
+
+// touch screen pins, obtained from the documentaion
+#define YP A2  // must be an analog pin, use "An" notation!
+#define XM A3  // must be an analog pin, use "An" notation!
+#define YM  5  // can be a digital pin
+#define XP  4  // can be a digital pin
+
 
 
 // Use hardware SPI (on Mega2560, #52, #51, and #50) and the above for CS/DC
@@ -46,14 +74,23 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 // the currently selected restaurant, if we are in mode 1
 int selectedRest;
 int CselectedRest;
+bool draw = false;
+int RATING;
+
+
+// a multimeter reading says there are 300 ohms of resistance across the plate,
+// so initialize with this to get more accurate readings
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
+
+
 
 // CHANGE THE RATINGS PREFERENCE
 
-int SELECTOR = 5;
 
-
+void checkTouch();
 int maxRest(int SELECTOR);
-int maxRestaurant = maxRest(SELECTOR);
+
+
 
 // which mode are we in?
 int mode;
@@ -77,6 +114,7 @@ RestCache cache;
 // it seems natural to forward declare both (not really that important).
 void beginMode0();
 void beginMode1();
+void initialDrawings();
 
 void setup() {
 	init();
@@ -102,7 +140,7 @@ void setup() {
 
   Serial.println("OK!");
 
-	tft.setRotation(-1);
+	tft.setRotation(3);
 	tft.setTextWrap(false);
 
   // initial cursor position is the centre of the screen
@@ -118,6 +156,23 @@ void setup() {
 	cache.cachedBlock = 0;
 
   beginMode0();
+	initialDrawings();
+}
+
+void initialDrawings(){
+	TSPoint touch = ts.getPoint();
+
+
+	tft.fillCircle(295, 25, 20, BLACK);
+	tft.fillCircle(295, 70, 20, BLACK);
+	tft.fillCircle(295, 115, 20, BLACK);
+	tft.fillCircle(295, 160, 20, BLACK);
+	tft.fillCircle(295, 205, 20, BLACK);
+		tft.drawChar(295 - 8, 25 - 12, '5', WHITE, BLACK, 3);
+		tft.drawChar(295 - 8, 70 - 12, '4', WHITE, BLACK, 3);
+		tft.drawChar(295 - 8, 115 - 12, '3', WHITE, BLACK, 3);
+		tft.drawChar(295 - 8, 160 - 12, '2', WHITE, BLACK, 3);
+		tft.drawChar(295 - 8, 205 - 12, '1', WHITE, BLACK, 3);
 }
 
 // Draw the map patch of edmonton over the preView position, then
@@ -133,8 +188,73 @@ void moveCursor() {
 							 CURSOR_SIZE, CURSOR_SIZE, ILI9341_RED);
 }
 
+
+
+void checkTouch() {
+	TSPoint touch = ts.getPoint();
+
+
+	if (touch.z >= MINPRESSURE && touch.z <= MAXPRESSURE) {
+		Serial.println("entering here");
+		int touchY = map(touch.x, TS_MINX, TS_MAXX, 0, TFT_HEIGHT - 1);
+
+		// need to invert the x-axis, so reverse the
+		// range of the display coordinates
+		int touchX = map(touch.y, TS_MINY, TS_MAXY, TFT_WIDTH - 1, 0);
+
+		//tft.fillScreen(ILI9341_BLACK);
+		tft.setCursor(0, 0);
+
+		initialDrawings();
+
+
+
+		if (touchX <= 320 && touchX >= 270){
+			if (touchY < 30){
+				tft.fillCircle(295, 25, 20, WHITE);
+				tft.drawChar(295 - 8, 25 - 12, '5', BLACK, WHITE, 3);
+				RATING = 5;
+
+			//delay(30);
+			//SELECTOR = 5;
+			}
+			else if (touchY > 48 && touchY < 65){
+				tft.fillCircle(295, 70, 20, WHITE);
+				tft.drawChar(295 - 8, 70 - 12, '4', BLACK, WHITE, 3);
+				RATING = 4;
+				//SELECTOR = 4;
+			}
+			else if (touchY > 90 && touchY < 120){
+				tft.fillCircle(295, 115, 20, WHITE);
+				tft.drawChar(295 - 8, 115 - 12, '3', BLACK, WHITE, 3);
+				RATING = 3;
+			//SELECTOR = 3;
+			}
+			else if (touchY > 140 && touchY < 165){
+				tft.fillCircle(295, 160, 20, WHITE);
+				tft.drawChar(295 - 8, 160 - 12, '2', BLACK, WHITE, 3);
+				RATING = 2;
+			//SELECTOR = 2;
+			}
+			else if (touchY > 185 && touchY < 211){
+				tft.fillCircle(295, 205, 20, WHITE);
+				tft.drawChar(295 - 8, 205 - 12, '1', BLACK, WHITE, 3);
+				RATING = 1;
+			//SELECTOR = 1;
+			}
+		}
+	}
+
+}
+
+
+
+int selection;
+
 // Set the mode to 0 and draw the map and cursor according to curView
 void beginMode0() {
+
+
 	// Black out the rating SELECTOR part (less relevant in Assignment 1, but
 	// it is useful when you first start the program).
 	tft.fillRect(DISP_WIDTH, 0, RATING_SIZE, DISP_HEIGHT, ILI9341_BLACK);
@@ -147,6 +267,7 @@ void beginMode0() {
 
 	// just the initial draw of the cursor on the map
 	moveCursor();
+
 
   mode = 0;
 }
@@ -198,7 +319,7 @@ void beginMode1() {
 	for (int i = 0; i < REST_DISP_NUM; ++i) {
 		printNext(i, 0);
 	}
-	Serial.println(maxRestaurant);
+	//Serial.println(maxRestaurant);
 
 
 	mode = 1;
@@ -273,6 +394,19 @@ void checkRedrawMap() {
 	}
 }
 
+int maxxx(){
+	restaurant g;
+ 	uint32_t j;
+	for (int i=0; i<NUM_RESTAURANTS - 1; ++i){
+		if (g.rating >= 3){
+			j++;
+		}
+
+	}
+	Serial.print("MIN res: ");Serial.println(j);
+
+}
+
 // Process joystick input when in mode 0.
 void scrollingMap() {
   int v = analogRead(JOY_VERT_ANALOG);
@@ -311,6 +445,7 @@ void scrollingMap() {
 		// Now draw the cursor's new position.
 		moveCursor();
 	}
+	//Serial.print("Rating: ");Serial.println(RATING);
 
 	preView = curView;
 
@@ -332,7 +467,7 @@ int maxRest(int SELECTOR){
 		return 154;
 	}
 	else if (SELECTOR == 4){
-		return 650;
+		return 654;
 	}
 	else if (SELECTOR == 3){
 		return 939;
@@ -350,6 +485,10 @@ void scrollingMenu() {
 
 	int newi;
 	int oldRest = selectedRest;
+
+	//Serial.print("Rating: ");Serial.println(RATING);
+
+	int maxRestaurant = maxRest(RATING);
 
 
 
@@ -418,23 +557,35 @@ void scrollingMenu() {
 		// Ensures a long click of the joystick will not register twice.
 		while (digitalRead(JOY_SEL) == LOW) { delay(10); }
 	}
+
 }
 
 int main() {
 	setup();
-
 	// All the implementation work is done now, just have a loop that processes
 	// joystick movement!
+
+	int increment = 0;
+	maxxx();
 	while (true) {
+
+
 		if (mode == 0) {
+
+			if(increment == 0) initialDrawings();
+			checkTouch();
 			scrollingMap();
+
+
+			//Serial.print("Selector: ");Serial.println(SELECTOR);
+
+			increment = 1;
 
 		}
 		else {
 			scrollingMenu();
+			increment = 0;
 			//Serial.print(maxRestaurant);
-
-
 			//maxRest();
 		}
 	}

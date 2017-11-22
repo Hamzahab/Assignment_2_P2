@@ -1,8 +1,9 @@
 #include "restaurant.h"
 #include "quicksort.h"
 
-// CHANGE THE RATINGS PREFERENCE
-#define SELECTOR 5
+// CHANGE THE RATINGS PREFEREr
+
+
 
 
 
@@ -42,6 +43,7 @@ int16_t manhattan(int16_t x1, int16_t y1, int16_t x2, int16_t y2) {
 */
 void getAndSortRestaurants(const MapView& mv, RestDist restaurants[], Sd2Card* card, RestCache* cache) {
 	restaurant r;
+	uint32_t jj;
 	//int SELECTOR = 5;
 	// first get all the restaurants and store their corresponding RestDist information.
 	for (int i = 0; i < NUM_RESTAURANTS; ++i) {
@@ -64,8 +66,9 @@ void getAndSortRestaurants(const MapView& mv, RestDist restaurants[], Sd2Card* c
 		int rating = max(floor(x+1)/2, 1);
 		int index = restaurants[i].index;
 		//Serial.print(rating);
-		if (rating >= SELECTOR){
+		if (rating >= RATING){
 			restaurants[i].index = index;
+			jj++;
 		}
 		else{
 			restaurants[i].index = 0;
@@ -75,7 +78,7 @@ void getAndSortRestaurants(const MapView& mv, RestDist restaurants[], Sd2Card* c
 		//Serial.println(restaurants[i].index);
 
 	}
-
+	//Serial.print("MIN res: ");Serial.println(jj);
 	// Now sort them.
 	qsort(restaurants, NUM_RESTAURANTS);
 
