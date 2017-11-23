@@ -1,3 +1,14 @@
+/*
+	Names: Mustafa Mohamed & Hamzah Abdullahi
+	Description: Assignment 2 Part 2 acts the same as part 1, basically acting as a restaurant selectot by using a joystick
+	to pinpoint which area to look ar closest restaurants. Pressing the joystick brings up a page that shows the closest restaurants
+	in terms of distance.
+
+	With Part 2, a rating selector was implemented that tells the allows the user to select the minimal rating they want in terms of the
+	list of restaurants shown.
+*/
+
+//include all necessary libraries and headr files
 #include <Arduino.h>
 #include <Adafruit_ILI9341.h>
 #include <SPI.h>
@@ -7,6 +18,7 @@
 #include "restaurant.h"
 #include "quicksort.h"
 #include <TouchScreen.h>
+
 // TFT display and SD card will share the hardware SPI interface.
 // For the Adafruit shield, these are the default.
 // The display uses hardware SPI, plus #9 & #10
@@ -72,19 +84,20 @@
 // Use hardware SPI (on Mega2560, #52, #51, and #50) and the above for CS/DC
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 // the currently selected restaurant, if we are in mode 1
+
+//variable that is used to highlight the current restaurant in mode 1
 int selectedRest;
+//variable implemented to show the restaurants
 int CselectedRest;
+//used to ensure that the screen was touched (rating selector)
 bool draw = false;
+//variable used to store the rating
 int RATING;
 
 
 // a multimeter reading says there are 300 ohms of resistance across the plate,
 // so initialize with this to get more accurate readings
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
-
-
-
-// CHANGE THE RATINGS PREFERENCE
 
 
 void checkTouch();
@@ -159,6 +172,7 @@ void setup() {
 	initialDrawings();
 }
 
+//function that draws the rating selector on the previously black space
 void initialDrawings(){
 	TSPoint touch = ts.getPoint();
 
@@ -168,11 +182,11 @@ void initialDrawings(){
 	tft.fillCircle(295, 115, 20, BLACK);
 	tft.fillCircle(295, 160, 20, BLACK);
 	tft.fillCircle(295, 205, 20, BLACK);
-		tft.drawChar(295 - 8, 25 - 12, '5', WHITE, BLACK, 3);
-		tft.drawChar(295 - 8, 70 - 12, '4', WHITE, BLACK, 3);
-		tft.drawChar(295 - 8, 115 - 12, '3', WHITE, BLACK, 3);
-		tft.drawChar(295 - 8, 160 - 12, '2', WHITE, BLACK, 3);
-		tft.drawChar(295 - 8, 205 - 12, '1', WHITE, BLACK, 3);
+	tft.drawChar(295 - 8, 25 - 12, '5', WHITE, BLACK, 3);
+	tft.drawChar(295 - 8, 70 - 12, '4', WHITE, BLACK, 3);
+	tft.drawChar(295 - 8, 115 - 12, '3', WHITE, BLACK, 3);
+	tft.drawChar(295 - 8, 160 - 12, '2', WHITE, BLACK, 3);
+	tft.drawChar(295 - 8, 205 - 12, '1', WHITE, BLACK, 3);
 }
 
 // Draw the map patch of edmonton over the preView position, then
@@ -189,72 +203,56 @@ void moveCursor() {
 }
 
 
-
+//checks to see if the screen was touched, and where it specifically was
+//therefore if a specific rating was touched, and the joystick was pressed
+//only restaurants with that rating or above will be shown
 void checkTouch() {
 	TSPoint touch = ts.getPoint();
-
-
+	//if minimum pressure was applied and was less than max, it was an actual touch
 	if (touch.z >= MINPRESSURE && touch.z <= MAXPRESSURE) {
-		Serial.println("entering here");
 		int touchY = map(touch.x, TS_MINX, TS_MAXX, 0, TFT_HEIGHT - 1);
 
 		// need to invert the x-axis, so reverse the
 		// range of the display coordinates
 		int touchX = map(touch.y, TS_MINY, TS_MAXY, TFT_WIDTH - 1, 0);
 
-		//tft.fillScreen(ILI9341_BLACK);
 		tft.setCursor(0, 0);
 
 		initialDrawings();
 
-
-
+		//if a touch is registered in a specific area (over a numbered circle)
 		if (touchX <= 320 && touchX >= 270){
 			if (touchY < 30){
 				tft.fillCircle(295, 25, 20, WHITE);
 				tft.drawChar(295 - 8, 25 - 12, '5', BLACK, WHITE, 3);
 				RATING = 5;
-
-			//delay(30);
-			//SELECTOR = 5;
 			}
 			else if (touchY > 48 && touchY < 65){
 				tft.fillCircle(295, 70, 20, WHITE);
 				tft.drawChar(295 - 8, 70 - 12, '4', BLACK, WHITE, 3);
 				RATING = 4;
-				//SELECTOR = 4;
 			}
 			else if (touchY > 90 && touchY < 120){
 				tft.fillCircle(295, 115, 20, WHITE);
 				tft.drawChar(295 - 8, 115 - 12, '3', BLACK, WHITE, 3);
 				RATING = 3;
-			//SELECTOR = 3;
 			}
 			else if (touchY > 140 && touchY < 165){
 				tft.fillCircle(295, 160, 20, WHITE);
 				tft.drawChar(295 - 8, 160 - 12, '2', BLACK, WHITE, 3);
 				RATING = 2;
-			//SELECTOR = 2;
 			}
 			else if (touchY > 185 && touchY < 211){
 				tft.fillCircle(295, 205, 20, WHITE);
 				tft.drawChar(295 - 8, 205 - 12, '1', BLACK, WHITE, 3);
 				RATING = 1;
-			//SELECTOR = 1;
 			}
 		}
 	}
-
 }
-
-
-
-int selection;
 
 // Set the mode to 0 and draw the map and cursor according to curView
 void beginMode0() {
-
-
 	// Black out the rating SELECTOR part (less relevant in Assignment 1, but
 	// it is useful when you first start the program).
 	tft.fillRect(DISP_WIDTH, 0, RATING_SIZE, DISP_HEIGHT, ILI9341_BLACK);
@@ -291,16 +289,10 @@ void printNext(int i, int newi) {
 	if (restaurants[newi + i].dist < 24910){
 		tft.setCursor(0, i*8);
 		tft.print(r.name);
-
 	}
-
+	//maps the stored ratings from their normal range of 1-10 to 1-5
 	int x = r.rating;
 	int rating = max(floor(x+1)/2, 1);
-	// Serial.print(r.name);Serial.println(rating);
-	//Serial.print(restaurants[newi + i].dist);Serial.print(" ");Serial.println(rating);
-	//Serial.println(r.name);
-	//Serial.print("J -----");Serial.println(j);
-
 }
 
 // Begin mode 1 by sorting the restaurants around the cursor
@@ -319,12 +311,10 @@ void beginMode1() {
 	for (int i = 0; i < REST_DISP_NUM; ++i) {
 		printNext(i, 0);
 	}
-	//Serial.println(maxRestaurant);
-
 
 	mode = 1;
 }
-
+//generates list of restaurants for next page when the 30 restaurants are scrolled over
 void nextPage(int newi) {
 	tft.setCursor(0, 0);
 	tft.fillScreen(ILI9341_BLACK);
@@ -336,10 +326,9 @@ void nextPage(int newi) {
 		printNext(i, newi);
 	}
 
-
 	mode = 1;
 }
-
+//if user wants to back to previous page
 void prevPage(int newi) {
 	tft.setCursor(0, 0);
 	tft.fillScreen(ILI9341_BLACK);
@@ -350,7 +339,6 @@ void prevPage(int newi) {
 	for (int i = 0; i < 30; ++i) {
 		printNext(i, newi);
 	}
-
 
 	mode = 1;
 }
@@ -392,19 +380,6 @@ void checkRedrawMap() {
 
 		lcd_image_draw(&edmontonBig, &tft, curView.mapX, curView.mapY, 0, 0, DISP_WIDTH, DISP_HEIGHT);
 	}
-}
-
-int maxxx(){
-	restaurant g;
- 	uint32_t j;
-	for (int i=0; i<NUM_RESTAURANTS - 1; ++i){
-		if (g.rating >= 3){
-			j++;
-		}
-
-	}
-	Serial.print("MIN res: ");Serial.println(j);
-
 }
 
 // Process joystick input when in mode 0.
@@ -461,7 +436,7 @@ void scrollingMap() {
 		while (digitalRead(JOY_SEL) == LOW) { delay(10); }
   }
 }
-
+//based on the rating that the user selected, this is how many restaurants that have those ratings
 int maxRest(int SELECTOR){
 	if (SELECTOR == 5){
 		return 154;
@@ -482,18 +457,10 @@ int maxRest(int SELECTOR){
 
 // Process joystick movement when in mode 1.
 void scrollingMenu() {
-
 	int newi;
 	int oldRest = selectedRest;
-
-	//Serial.print("Rating: ");Serial.println(RATING);
-
 	int maxRestaurant = maxRest(RATING);
-
-
-
 	int v = analogRead(JOY_VERT_ANALOG);
-
 
 	// if the joystick was pushed up or down, change restaurants accordingly.
 	if (v > JOY_CENTRE + JOY_DEADZONE) {
@@ -506,11 +473,9 @@ void scrollingMenu() {
 		}
 		if (CselectedRest % 30 == 0 && CselectedRest != 0){
 			nextPage(newi);
-
 		}
-
-
 	}
+
 	else if (v < JOY_CENTRE - JOY_DEADZONE) {
 		--selectedRest;
 		--CselectedRest;
@@ -521,11 +486,6 @@ void scrollingMenu() {
 		}
 	}
 	CselectedRest = constrain(CselectedRest, 0, maxRestaurant - 1);
-	//Serial.print("CselectedRest: ");Serial.println(CselectedRest);
-	//Serial.print("SelectedRest: ");Serial.println(selectedRest);
-
-
-
 
 	// If we picked a new restaurant, update the way it and the previously
 	// selected restaurant are displayed.
@@ -555,9 +515,10 @@ void scrollingMenu() {
 		beginMode0();
 
 		// Ensures a long click of the joystick will not register twice.
-		while (digitalRead(JOY_SEL) == LOW) { delay(10); }
+		while (digitalRead(JOY_SEL) == LOW) {
+			delay(10);
+		}
 	}
-
 }
 
 int main() {
@@ -565,28 +526,23 @@ int main() {
 	// All the implementation work is done now, just have a loop that processes
 	// joystick movement!
 
+	//variable that is used to ensure rating selector is drawn after leaving mode 1 when the map is drawn again
 	int increment = 0;
-	maxxx();
+
 	while (true) {
-
-
 		if (mode == 0) {
-
+			//see line 529
 			if(increment == 0) initialDrawings();
+
+			//checks to see if the screen was touched
 			checkTouch();
 			scrollingMap();
 
-
-			//Serial.print("Selector: ");Serial.println(SELECTOR);
-
 			increment = 1;
-
 		}
 		else {
 			scrollingMenu();
 			increment = 0;
-			//Serial.print(maxRestaurant);
-			//maxRest();
 		}
 	}
 
